@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jaron's Pantanal Quiz</title>
+    <style>
+        /* --- GENERAL STYLES (Editorial Look) --- */
+        body {
+            font-family: 'Georgia', 'Times New Roman', Times, serif;
+            background-color: #fcfcfc;
+            color: #1a1a1a;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden; /* Prevent scrollbar when images fly */
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            text-align: center;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* --- TYPOGRAPHY --- */
+        h1 {
+            font-size: 3.5rem;
+            line-height: 1.1;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            font-weight: 400;
+            font-style: italic;
+        }
+
+        .subtitle {
+            font-family: sans-serif;
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 40px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 30px;
+        }
+
+        .intro-text {
+            font-size: 1.2rem;
+            line-height: 1.6;
+            margin-bottom: 50px;
+            text-align: left;
+        }
+
+        /* --- QUIZ ITEMS --- */
+        .quiz-item {
+            font-size: 1.8rem;
+            line-height: 1.8;
+            margin-bottom: 60px;
+            text-align: left;
+            position: relative;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 40px;
+        }
+
+        /* The clickable blank space */
+        .blank-spot {
+            display: inline-block;
+            min-width: 150px;
+            border-bottom: 3px solid #000;
+            cursor: pointer;
+            color: #d93025; /* Default highlight color */
+            font-weight: bold;
+            text-align: center;
+            position: relative;
+            transition: all 0.3s ease;
+            padding: 0 10px;
+        }
+
+        .blank-spot:hover {
+            background-color: #f0f0f0;
+        }
+
+        /* States for correct/incorrect */
+        .blank-spot.correct {
+            border-bottom: none;
+            cursor: default;
+            background: #e6f4ea; /* Light green background */
+            color: #137333; /* Dark green text */
+        }
+
+        .blank-spot.incorrect {
+            border-bottom: none;
+            cursor: default;
+            background: #fce8e6; /* Light red background */
+            color: #c5221f; /* Dark red text */
+            text-decoration: line-through;
+        }
+        
+        /* Show the real answer next to it if wrong */
+        .correction {
+            display: none;
+            color: #137333;
+            font-weight: bold;
+            margin-left: 10px;
+            font-size: 1.4rem;
+        }
+
+        /* --- DROPDOWN MENU --- */
+        .options-menu {
+            display: none;
+            position: absolute;
+            background: white;
+            border: 1px solid #000;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+            z-index: 100;
+            text-align: left;
+            font-size: 1.2rem;
+            min-width: 200px;
+            left: 50%;
+            transform: translateX(-50%);
+            top: 100%;
+        }
+
+        .options-menu.show {
+            display: block;
+        }
+
+        .option {
+            padding: 10px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #eee;
+            font-family: sans-serif;
+            font-size: 1rem;
+        }
+
+        .option:hover {
+            background-color: #fff5cc;
+        }
+
+        .option:last-child {
+            border-bottom: none;
+        }
+
+        /* --- SCORE SCREEN (MODAL) --- */
+        .score-overlay {
+            display: none; /* Hidden by default */
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .score-box {
+            border: 2px solid #000;
+            padding: 40px;
+            background: white;
+            max-width: 500px;
+            text-align: center;
+            box-shadow: 10px 10px 0px rgba(0,0,0,0.1);
+        }
+
+        .score-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .score-rank {
+            font-size: 1.5rem;
+            font-style: italic;
+            margin-bottom: 30px;
+            color: #555;
+        }
+
+        .score-detail {
+            font-family: sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 40px;
+        }
+
+        .restart-btn {
+            background-color: #000;
+            color: #fff;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            font-family: sans-serif;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: background 0.3s;
+        }
+
+        .restart-btn:hover {
+            background-color: #333;
+        }
+
+        /* --- FLYING IMAGE ANIMATION --- */
+        .flying-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none; /* Let clicks pass through */
+            z-index: 5;
+            overflow: hidden;
+        }
+
+        .flying-img {
+            position: absolute;
+            width: 80px; /* Adjust size of animals here */
+            height: auto;
+            opacity: 0;
+            /* Default animation */
+            animation: flyUp 3s ease-out forwards;
+        }
+
+        @keyframes flyUp {
+            0% {
+                transform: translateY(100vh) rotate(0deg) scale(0.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-20vh) rotate(20deg) scale(1.2);
+                opacity: 0;
+            }
+        }
+
+        /* Variation for diagonal flying */
+        @keyframes flyDiagonal {
+            0% {
+                transform: translate(-10vw, 50vh) rotate(-10deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(100vw, -10vh) rotate(10deg);
+                opacity: 0;
+            }
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            margin-top: 50px;
+            font-size: 0.8rem;
+            color: #888;
+            font-family: sans-serif;
+            padding-bottom: 50px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Container for the flying images -->
+    <div id="flying-scene" class="flying-container"></div>
+
+    <!-- Score Overlay Screen -->
+    <div id="score-screen" class="score-overlay">
+        <div class="score-box">
+            <div class="score-title" id="final-score">0 / 5</div>
+            <div class="score-rank" id="final-rank">Rank: Tourist</div>
+            <div class="score-detail">
+                "The Pantanal is wild, and apparently, so were your guesses."
+            </div>
+            <button class="restart-btn" onclick="location.reload()">Replay Quiz</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h1>These 5 Animals<br>Defined Jaron's Trip.</h1>
+        <h2>How Many Can You Name?</h2>
+        
+        <div class="subtitle">
+            Do you know your Capybaras from your Caimans? <br>
+            By Jaron & The Tour Guides
+        </div>
+
+        <p class="intro-text">
+            2025 brought us beautiful waterfalls and dense jungles. The Pantanal gave us plenty of tangible creatures to obsess over. There were the silly, chill rodents, the majestic flying birds, and the roaring waters of Iguazu. <br><br>
+            <strong>Test your knowledge below.</strong>
+        </p>
+
+        <!-- QUIZ CONTAINER -->
+        <div id="quiz-content">
+            <!-- Questions will be injected here by JavaScript -->
+        </div>
+
+        <footer>
+            Happy Playing!
+        </footer>
+    </div>
+
+    <script>
+        // ============================================
+        // CONFIGURATION: SETUP YOUR QUESTIONS & IMAGES
+        // ============================================
+        
+        const quizData = [
+            {
+                id: 1,
+                beforeText: "The undisputed king of the wetlands, this spotted cat is known as the",
+                answer: "Jaguar",
+                afterText: ". It is the third-largest feline in the world.",
+                options: ["Mountain Lion", "Jaguar", "Leopard", "Cheetah"],
+                // PLACEHOLDER: Replace with 'jaguar.png'
+                imageSrc: "https://placehold.co/100x100/orange/white?text=Jaguar" 
+            },
+            {
+                id: 2,
+                beforeText: "Known for being the world's largest rodent, the incredibly chill",
+                answer: "Capybara",
+                afterText: "was seen relaxing by the riverbanks.",
+                options: ["Guinea Pig", "Wombat", "Capybara", "Nutria"],
+                // PLACEHOLDER: Replace with 'capybara.png'
+                imageSrc: "https://placehold.co/100x100/brown/white?text=Capybara"
+            },
+            {
+                id: 3,
+                beforeText: "At Iguazu Falls, visitors were surrounded by swarms of",
+                answer: "Coatis",
+                afterText: ", searching tourists' bags for snacks.",
+                options: ["Raccoons", "Coatis", "Monkeys", "Lemurs"],
+                // PLACEHOLDER: Replace with 'coati.png'
+                imageSrc: "https://placehold.co/100x100/grey/white?text=Coati"
+            },
+            {
+                id: 4,
+                beforeText: "Flying overhead with vibrant blue feathers, the",
+                answer: "Hyacinth Macaw",
+                afterText: "is the largest flying parrot species in the world.",
+                options: ["Toucan", "Hyacinth Macaw", "Parakeet", "Cockatoo"],
+                // PLACEHOLDER: Replace with 'macaw.png'
+                imageSrc: "https://placehold.co/100x100/blue/white?text=Macaw"
+            },
+            {
+                id: 5,
+                beforeText: "The most famous section of Iguazu Falls is the roaring abyss known as the",
+                answer: "Devil's Throat",
+                afterText: ", where half the river's flow falls at once.",
+                options: ["Angel's Drop", "Lion's Mouth", "Devil's Throat", "God's Tear"],
+                // PLACEHOLDER: Replace with 'waterfall.png' or 'toucan.png'
+                imageSrc: "https://placehold.co/100x100/teal/white?text=Falls"
+            }
+        ];
+
+        // ============================================
+        // LOGIC
+        // ============================================
+
+        const quizContainer = document.getElementById('quiz-content');
+        const flyingScene = document.getElementById('flying-scene');
+        const scoreScreen = document.getElementById('score-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalRankEl = document.getElementById('final-rank');
+        const finalMsgEl = document.querySelector('.score-detail');
+
+        let currentScore = 0;
+        let answeredCount = 0;
+
+        // Render the Quiz
+        quizData.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'quiz-item';
+            
+            // HTML structure for question
+            div.innerHTML = `
+                ${item.beforeText} 
+                <span class="blank-spot" id="blank-${index}" onclick="toggleMenu(${index})">__________
+                    <div class="options-menu" id="menu-${index}">
+                        ${item.options.map(opt => `<div class="option" onclick="selectAnswer(${index}, '${opt}')">${opt}</div>`).join('')}
+                    </div>
+                </span>
+                <span class="correction" id="correction-${index}">(${item.answer})</span>
+                ${item.afterText}
+            `;
+            quizContainer.appendChild(div);
+        });
+
+        // Toggle dropdown menu
+        function toggleMenu(index) {
+            const menu = document.getElementById(`menu-${index}`);
+            const blank = document.getElementById(`blank-${index}`);
+            
+            // Prevent reopening if already answered
+            if(blank.classList.contains('correct') || blank.classList.contains('incorrect')) return;
+
+            // Close all other menus first
+            document.querySelectorAll('.options-menu').forEach(m => m.classList.remove('show'));
+            
+            // Toggle current
+            menu.classList.toggle('show');
+            
+            // Stop propagation so clicking menu doesn't close it immediately via window listener
+            event.stopPropagation();
+        }
+
+        // Close menus when clicking outside
+        window.onclick = function(event) {
+            if (!event.target.matches('.blank-spot')) {
+                document.querySelectorAll('.options-menu').forEach(m => m.classList.remove('show'));
+            }
+        }
+
+        // Handle Answer Selection
+        function selectAnswer(index, selected) {
+            const data = quizData[index];
+            const blank = document.getElementById(`blank-${index}`);
+            const correction = document.getElementById(`correction-${index}`);
+            
+            // Update text
+            blank.innerHTML = selected;
+            
+            // Logic: Is it correct?
+            if(selected === data.answer) {
+                blank.classList.add('correct');
+                currentScore++;
+                // Trigger animation only if correct (or both? Let's do both for fun)
+                triggerFlyingAnimation(data.imageSrc);
+            } else {
+                blank.classList.add('incorrect');
+                // Show the real answer
+                correction.style.display = 'inline';
+                // Still trigger animation because it's fun
+                triggerFlyingAnimation(data.imageSrc);
+            }
+
+            answeredCount++;
+
+            // Check if game is over
+            if (answeredCount === quizData.length) {
+                setTimeout(showResults, 2000); // Wait 2 seconds before showing score
+            }
+        }
+
+        // Show Results Screen
+        function showResults() {
+            finalScoreEl.innerText = `${currentScore} / ${quizData.length}`;
+            
+            let rank = "";
+            let msg = "";
+
+            if (currentScore === 5) {
+                rank = "Rank: Pantanal Expert";
+                msg = "Wow! You really know your South American wildlife. Jaron would be proud.";
+            } else if (currentScore >= 3) {
+                rank = "Rank: Enthusiastic Tourist";
+                msg = "Not bad! You paid attention to the tour guide... mostly.";
+            } else {
+                rank = "Rank: Lost Traveler";
+                msg = "It seems you spent most of the trip looking at your phone. Try again!";
+            }
+
+            finalRankEl.innerText = rank;
+            finalMsgEl.innerText = msg;
+            scoreScreen.style.display = 'flex';
+        }
+
+        // Create the flying animals effect
+        function triggerFlyingAnimation(imgSrc) {
+            const count = 15; // How many animals fly per answer
+            
+            for (let i = 0; i < count; i++) {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.className = 'flying-img';
+                
+                // Randomize position and speed
+                const randomLeft = Math.random() * 90; // 0 to 90vw
+                const randomDelay = Math.random() * 0.5; // 0 to 0.5s delay
+                const randomDuration = 2 + Math.random() * 2; // 2 to 4s duration
+                
+                img.style.left = randomLeft + 'vw';
+                img.style.animationDelay = randomDelay + 's';
+                img.style.animationDuration = randomDuration + 's';
+                
+                // Randomize animation type (Straight up or Diagonal)
+                if(Math.random() > 0.5) {
+                    img.style.animationName = 'flyDiagonal';
+                } else {
+                    img.style.animationName = 'flyUp';
+                }
+
+                flyingScene.appendChild(img);
+
+                // Cleanup DOM after animation
+                setTimeout(() => {
+                    img.remove();
+                }, (randomDuration + randomDelay) * 1000);
+            }
+        }
+
+    </script>
+</body>
+</html>
